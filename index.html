@@ -8,14 +8,11 @@
 <!-- Firebase SDK v8 -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-// ══════════════════════════════════════
-//  🔧 FIREBASE 설정 (본인 프로젝트 값으로 교체)
-// ══════════════════════════════════════
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
   // Firebase 설정
   const firebaseConfig = {
@@ -24,17 +21,17 @@
     projectId: "epl-students-score",
     storageBucket: "epl-students-score.appspot.com",
     messagingSenderId: "653687250225",
-    appId: "1:653687250225:web:d25e30e1207f68008aa410",
-    measurementId: "G-V1JTK2DZ4H"
+    appId: "1:653687250225:web:d25e30e1207f68008aa410"
   };
 
-  // Firebase 초기화
+  // 초기화
   if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
   }
   
-  // 데이터베이스 연결 확인용 (콘솔에서 확인 가능)
-  console.log("Firebase 호환 모드로 연결 시도 중...");
+  // 기존 코드들이 'db'라는 이름을 쓸 확률이 높으므로 'db'를 선언해줍니다.
+  var db = firebase.database();
+  console.log("Firebase 연결 성공!");
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Bebas+Neue&display=swap');
