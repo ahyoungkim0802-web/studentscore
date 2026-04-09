@@ -12,12 +12,12 @@
 // ══════════════════════════════════════
 //  🔧 FIREBASE 설정 (본인 프로젝트 값으로 교체)
 // ══════════════════════════════════════
-<script type="module">
-  // 1. 필요한 Firebase 라이브러리 임포트
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
 
-  // 2. 본인의 Firebase 설정 (중복 없이 한 번만!)
+<script>
+  // Firebase 설정
   const firebaseConfig = {
     apiKey: "AIzaSyCJzYroEAgoInf1w-ROm9PTjO6gUGoLoHs",
     authDomain: "epl-students-score.firebaseapp.com",
@@ -28,11 +28,13 @@
     measurementId: "G-V1JTK2DZ4H"
   };
 
-  // 3. Firebase 초기화
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-
-  console.log("Firebase 연결 성공!");
+  // Firebase 초기화
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  
+  // 데이터베이스 연결 확인용 (콘솔에서 확인 가능)
+  console.log("Firebase 호환 모드로 연결 시도 중...");
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Bebas+Neue&display=swap');
