@@ -510,8 +510,9 @@ const ROOT='epl';
 // ══════════════════════════════
 //  STORAGE LAYER (Firebase SDK)
 // ══════════════════════════════
-let USE_FIREBASE=false;
+let USE_FIREBASE=true; 
 let db=null;
+const FB_DB_URL = "https://epl-students-score-default-rtdb.firebaseio.com";
 
 async function dbGet(path){
   if(USE_FIREBASE){
