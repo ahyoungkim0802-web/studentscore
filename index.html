@@ -116,7 +116,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .chk-box.on{color:#fff;}
 .chk-hw-c{border-color:var(--hw);}.chk-hw-c.on{background:var(--hw);}
 .chk-ohw-c{border-color:var(--ohw);}.chk-ohw-c.on{background:var(--ohw);}
-.chk-att-c{border-color:var(--att);}.chk-att-c.on{background:var(--att);}
+.chk-att-c{border-color:var(--att);}.chk-att2-c.on{background:var(--att);}
 .chk-att2-c{border-color:var(--att2);}.chk-att2-c.on{background:var(--att2);}
 .cat-score-wrap{margin-top:5px;text-align:center;}
 .cat-cnt{font-size:10px;color:var(--muted);}
@@ -203,7 +203,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <body>
 <div class="toast" id="toast"></div>
 
-<!-- ══ FIREBASE 설정 화면 ══ -->
 <div id="scr-setup" class="screen">
   <div class="setup-box">
     <h2>🔧 Firebase 연결 설정</h2>
@@ -222,13 +221,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ══ LOADING ══ -->
 <div id="scr-loading" class="screen">
   <div class="spinner"></div>
   <div class="loading-txt" id="loading-txt">데이터 불러오는 중...</div>
 </div>
 
-<!-- ══ LANDING ══ -->
 <div id="scr-landing" class="screen active">
   <div class="landing-wrap">
     <div class="landing-logo-txt">
@@ -249,7 +246,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ══ ADMIN LOGIN ══ -->
 <div id="scr-admin-login" class="screen">
   <div class="login-wrap">
     <div class="login-box">
@@ -264,7 +260,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ══ STUDENT LOGIN ══ -->
 <div id="scr-student-login" class="screen">
   <div class="login-wrap">
     <div class="login-box">
@@ -281,13 +276,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ══ ADMIN MAIN ══ -->
 <div id="scr-admin" class="screen">
   <div class="hdr">
     <div><div class="logo-text-hdr">EPL 영어학원</div><div class="logo-sub-hdr">ADMIN</div></div>
     <div class="hdr-right">
       <span class="hdr-user">👨‍🏫 관리자</span>
-      <span id="fb-status" style="font-size:10px;padding:2px 8px;border-radius:10px;background:#dcfce7;color:#16a34a;">● FB</span>
+      <span id="fb-status" style="font-size:10px;padding:2px 8px;border-radius:10px;background:#dcfce7;color:#16a34a;">● FB 연결 (초록)</span>
       <button class="btn-logout" onclick="go('scr-landing')">로그아웃</button>
     </div>
   </div>
@@ -414,9 +408,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
         <div id="fb-test-result" style="margin-top:10px;font-size:12px;"></div>
       </div>
       <div class="card" style="max-width:380px;margin-top:16px;">
-        <div class="card-title" style="margin-bottom:14px;">🔄 데이터 새로고침</div>
-        <div style="font-size:13px;color:rgba(0,0,0,.5);margin-bottom:12px;">Firebase에서 최신 데이터를 다시 불러옵니다.</div>
-        <button class="btn btn-navy" onclick="reloadData()">🔄 새로고침</button>
+        <div class="card-title" style="margin-bottom:14px;">🔄 데이터 새로고침 (기기 간 동기화)</div>
+        <div style="font-size:13px;color:rgba(0,0,0,.5);margin-bottom:12px;">다른 기기에서 수정한 내용을 강제로 불러옵니다.</div>
+        <button class="btn btn-navy" onclick="reloadData(event)">🔄 지금 동기화</button>
       </div>
       <div class="card" style="max-width:380px;margin-top:16px;">
         <div class="card-title" style="margin-bottom:14px;">🔧 Firebase 재설정</div>
@@ -427,7 +421,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ══ STUDENT MAIN ══ -->
 <div id="scr-student" class="screen">
   <div class="hdr">
     <div><div class="logo-text-hdr">EPL 영어학원</div><div class="logo-sub-hdr">STUDENT</div></div>
@@ -479,10 +472,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- Firebase SDK -->
-
-
-
 <script>
 // ══════════════════════════════
 //  CONSTANTS
@@ -499,21 +488,27 @@ const LS_KEY='epl_fb_config';
 const ROOT='epl';
 
 // ══════════════════════════════
-//  STORAGE LAYER (Firebase SDK)
+//  STORAGE LAYER (REST API WITH CACHE BUSTING)
 // ══════════════════════════════
 let USE_FIREBASE=false;
-let db=null;
+let FB_DB_URL=null;
 
 async function dbGet(path){
   if(USE_FIREBASE){
-    const res=await fetch(`${FB_DB_URL}/${ROOT}/${path}.json`,{method:'GET',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
-    if(!res.ok){const txt=await res.text().catch(()=>'');throw new Error('Firebase 읽기 실패 ('+res.status+'): '+txt.substring(0,100));}
+    // 캐시 방지를 위해 랜덤 쿼리 추가
+    const url = `${FB_DB_URL}/${ROOT}/${path}.json?t=${Date.now()}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+    });
+    if(!res.ok) throw new Error('Firebase 읽기 실패');
     return await res.json();
   } else {
     const raw=localStorage.getItem(`${ROOT}/${path}`);
     return raw!=null?JSON.parse(raw):null;
   }
 }
+
 async function dbSet(path,val){
   if(USE_FIREBASE){
     const url=`${FB_DB_URL}/${ROOT}/${path}.json`;
@@ -522,9 +517,8 @@ async function dbSet(path,val){
     if(val!=null) opts.body=JSON.stringify(val);
     const res=await fetch(url,opts);
     if(!res.ok){
-      const txt=await res.text().catch(()=>'');
       setFbStatus(false);
-      throw new Error('Firebase 저장 실패 ('+res.status+'): '+txt.substring(0,100));
+      throw new Error('Firebase 저장 실패');
     }
     setFbStatus(true);
   } else {
@@ -536,8 +530,6 @@ async function dbSet(path,val){
 // ══════════════════════════════
 //  FIREBASE 연결
 // ══════════════════════════════
-
-
 async function connectFirebase(){
   const err=document.getElementById('setup-err');
   const btn=document.querySelector('.btn-setup');
@@ -554,29 +546,20 @@ async function connectFirebase(){
   btn.textContent='⏳ 연결 중...';
   btn.disabled=true;
   try {
-    // 순수 REST API로 연결 테스트 (SDK 불필요)
     FB_DB_URL=databaseURL;
     const pingUrl=`${FB_DB_URL}/${ROOT}/ping.json`;
-    const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('연결 시간 초과. URL과 보안 규칙(read/write: true)을 확인하세요.')),10000));
-    const testRes=await Promise.race([
-      fetch(pingUrl,{method:'PUT',headers:{'Content-Type':'application/json'},body:'"ok"'}),
-      timeout
-    ]);
-    if(!testRes.ok) throw new Error('연결 실패 HTTP '+testRes.status+'. 보안 규칙을 확인하세요.');
+    const testRes=await fetch(pingUrl,{method:'PUT',headers:{'Content-Type':'application/json'},body:'"ok"'});
+    if(!testRes.ok) throw new Error('연결 실패');
     USE_FIREBASE=true;
-    const cfg={databaseURL};
-    localStorage.setItem(LS_KEY,JSON.stringify(cfg));
+    localStorage.setItem(LS_KEY,JSON.stringify({databaseURL}));
     btn.textContent='✅ 연결됨!';
-    // 설정화면 즉시 숨기고 로딩으로
     document.getElementById('scr-setup').style.display='none';
     go('scr-loading');
-    document.getElementById('loading-txt').textContent='데이터 불러오는 중...';
     setTimeout(()=>initApp(), 300);
   } catch(e){
     btn.textContent=origTxt;
     btn.disabled=false;
-    let msg=e.message;
-    err.textContent='❌ '+msg;
+    err.textContent='❌ 연결 실패. 보안 규칙을 확인하세요.';
     err.style.display='block';
   }
 }
@@ -585,31 +568,7 @@ function useLocalMode(){
   localStorage.removeItem(LS_KEY);
   USE_FIREBASE=false;
   go('scr-loading');
-  document.getElementById('loading-txt').textContent='로컬 모드로 시작 중...';
   initApp();
-}
-
-async function initWithFirebase(cfg){
-  go('scr-loading');
-  const ltxt=document.getElementById('loading-txt');
-  ltxt.textContent='Firebase 연결 중...';
-  try {
-    FB_DB_URL=cfg.databaseURL.replace(/\/$/,'');
-    USE_FIREBASE=true;
-    // 연결 테스트
-    const res=await fetch(`${FB_DB_URL}/${ROOT}/config.json`);
-    if(!res.ok) throw new Error('DB 연결 실패 ('+res.status+'). 보안 규칙을 확인해주세요.');
-    ltxt.textContent='데이터 불러오는 중...';
-    initApp();
-  } catch(e){
-    ltxt.textContent='연결 실패: '+e.message;
-    setTimeout(()=>{
-      go('scr-setup');
-      const err=document.getElementById('setup-err');
-      err.textContent='오류: '+e.message;
-      err.style.display='block';
-    },2000);
-  }
 }
 
 // ══════════════════════════════
@@ -618,7 +577,7 @@ async function initWithFirebase(cfg){
 let APP={
   students:[], studentPws:{}, adminPw:'epl2024',
   classes:[...DEFAULT_CLASSES], nextId:1,
-  scores:{}, sessions:{},
+  scores:{}, sessions:{}, redemptions: {}
 };
 let curMonth=new Date(); curMonth.setDate(1);
 let curStudentId=null;
@@ -633,20 +592,21 @@ async function initApp(){
   try {
     let data={};
     if(USE_FIREBASE){
-      // REST API로 읽기 (WebSocket보다 안정적)
-      const url=`${FB_DB_URL}/${ROOT}.json`;
-      const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('DB 읽기 시간 초과')),10000));
-      const res=await Promise.race([fetch(url,{method:'GET',headers:{'Cache-Control':'no-cache'}}), timeout]);
-      if(!res.ok) throw new Error('DB 읽기 실패: '+res.status);
+      // 캐시 방지 쿼리 파라미터 적용
+      const url=`${FB_DB_URL}/${ROOT}.json?t=${Date.now()}`;
+      const res=await fetch(url,{method:'GET',headers:{'Cache-Control':'no-cache'}});
+      if(!res.ok) throw new Error('데이터 로드 실패');
       data=await res.json()||{};
     } else {
-      // 로컬 모드: 각 키 개별 로드
       const cfg=await dbGet('config')||{};
-      const students=await dbGet('students')||{};
-      const spws=await dbGet('studentPws')||{};
-      const scores=await dbGet('scores')||{};
-      const sessions=await dbGet('sessions')||{};
-      data={config:cfg,students,studentPws:spws,scores,sessions};
+      data={
+        config:cfg,
+        students:await dbGet('students')||{},
+        studentPws:await dbGet('studentPws')||{},
+        scores:await dbGet('scores')||{},
+        sessions:await dbGet('sessions')||{},
+        redemptions:await dbGet('redemptions')||{}
+      };
     }
 
     APP.adminPw  = data.config?.adminPw  || 'epl2024';
@@ -661,45 +621,51 @@ async function initApp(){
       APP.students=Object.entries(data.students)
         .filter(([id,v])=>v&&v.name&&v.class)
         .map(([id,v])=>({id:parseInt(id),...v}));
-      // 존재하지 않는 반의 학생 제거 (랭킹 오염 방지)
-      APP.students=APP.students.filter(s=>APP.classes.includes(s.class));
       const maxId=Math.max(0,...APP.students.map(s=>s.id));
       if(maxId>=APP.nextId) APP.nextId=maxId+1;
     }
 
     if(APP.students.length===0) await seedDefaultData();
 
-    // 이미 다른 화면(로그인 등)으로 이동했으면 덮어쓰지 않음
     setFbStatus(true);
     const cur=document.querySelector('.screen.active');
     if(!cur||cur.id==='scr-loading'||cur.id==='scr-landing') go('scr-landing');
     refreshStudentLoginClasses();
   } catch(e){
-    console.error('initApp 오류:', e.message);
-    // Firebase 연결 실패 시 화면에 표시
-    const ltxt=document.getElementById('loading-txt');
-    if(ltxt) ltxt.textContent='⚠️ Firebase 연결 오류: '+e.message;
-    setTimeout(()=>{
-      APP.adminPw = APP.adminPw || 'epl2024';
-      APP.classes = APP.classes.length ? APP.classes : [...DEFAULT_CLASSES];
-      go('scr-landing');
-      refreshStudentLoginClasses();
-    }, 3000);
+    setFbStatus(false);
+    go('scr-landing');
   }
 }
 
 async function seedDefaultData(){
-  const def=[
-    {id:1,name:'김민준',class:'A반'},{id:2,name:'이서연',class:'A반'},
-    {id:3,name:'박도윤',class:'A반'},{id:4,name:'최지우',class:'B반'},
-    {id:5,name:'정하은',class:'B반'},{id:6,name:'강지호',class:'B반'},
-  ];
+  const def=[{id:1,name:'김민준',class:'A반'},{id:2,name:'이서연',class:'A반'}];
   const pws={};def.forEach(s=>{pws[s.id]='0000';});
   const sObj={};def.forEach(s=>{sObj[s.id]={name:s.name,class:s.class};});
-  await dbSet('config',{adminPw:'epl2024',nextId:7,classes:[...DEFAULT_CLASSES]});
+  await dbSet('config',{adminPw:'epl2024',nextId:3,classes:[...DEFAULT_CLASSES]});
   await dbSet('students',sObj);
   await dbSet('studentPws',pws);
-  APP.students=def; APP.studentPws=pws; APP.nextId=7;
+  APP.students=def; APP.studentPws=pws; APP.nextId=3;
+}
+
+// ══════════════════════════════
+//  SYNC HELPERS
+// ══════════════════════════════
+async function reloadData(e){
+  const btn = e ? e.target : null;
+  const oldTxt = btn ? btn.textContent : '';
+  if(btn) btn.textContent = '🔄 동기화 중...';
+  
+  try {
+    liveChk = {}; // 편집중인 데이터 초기화
+    await initApp();
+    if(document.getElementById('scr-admin').classList.contains('active')) renderAdmin();
+    if(document.getElementById('scr-student').classList.contains('active')) renderStudent();
+    toast('✅ 동기화 완료! 최신 데이터를 불러왔습니다.');
+  } catch(e) {
+    toast('❌ 동기화 실패');
+  } finally {
+    if(btn) btn.textContent = oldTxt;
+  }
 }
 
 // ══════════════════════════════
@@ -715,7 +681,7 @@ async function saveScoresToDB(mon){ await dbSet(`scores/${mon}`,APP.scores[mon]|
 async function saveSessionsToDB(mon){ await dbSet(`sessions/${mon}`,APP.sessions[mon]||null); }
 
 // ══════════════════════════════
-//  UTILS
+//  UI UTILS
 // ══════════════════════════════
 function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -730,8 +696,7 @@ function toast(msg,dur=2600){
 function maskName(n){
   if(!n||n.length<=1)return n;
   if(n.length===2)return n[0]+'*';
-  const m=Math.floor(n.length/2);
-  return n.slice(0,m)+'*'+n.slice(m+1);
+  return n[0]+'*'+n.slice(2);
 }
 function scClass(v){if(v>=100)return 'sc-full';if(v>=75)return 'sc-high';if(v>=50)return 'sc-mid';if(v>0)return 'sc-low';return 'sc-zero';}
 function barCol(v){return v>=75?'#16a34a':v>=50?'#d97706':'#C0272D';}
@@ -744,33 +709,7 @@ function setFbStatus(ok){
   const el=document.getElementById('fb-status');if(!el)return;
   el.style.background=ok?'#dcfce7':'#fee2e2';
   el.style.color=ok?'#16a34a':'#dc2626';
-  el.textContent=ok?'● FB 연결':'● FB 오류';
-}
-
-function setBonus(sid,val){
-  const mon=monKey(curMonth);
-  if(!APP.scores[mon]) APP.scores[mon]={};
-  if(!APP.scores[mon][sid]) APP.scores[mon][sid]=emptyChkFor(getSessions(mon));
-  APP.scores[mon][sid].bonus=Math.max(0,parseInt(val)||0);
-  // 보너스 즉시 저장
-  saveScoresToDB(mon).catch(e=>console.error('보너스 저장 실패:',e));
-  const sess=getSessions(mon);
-  const base=getStudentChk(mon,sid,sess);
-  const sc={};CATS.forEach(c=>{sc[c.key]=liveChk[sid]?.[c.key]?[...liveChk[sid][c.key]]:[...base[c.key]];});
-  const totEl=document.getElementById('tot-'+sid);
-  if(totEl) totEl.innerHTML=`<span class="tot-chip">${getTotalWithBonus(mon,sc,sid)}</span>`;
-}
-function getTotalWithBonus(mon,chk,sid){return getTotal(chk)+(APP.scores[mon]?.[sid]?.bonus||0);}
-function getSessions(mon){return APP.sessions[mon]||{...DEFAULT_SESS};}
-function emptyChkFor(sess){const r={};CATS.forEach(c=>{r[c.key]=Array(sess[c.key]).fill(false);});return r;}
-function getStudentChk(mon,sid,sess){
-  const base=APP.scores[mon]?.[sid]||emptyChkFor(sess);
-  CATS.forEach(c=>{
-    if(!base[c.key])base[c.key]=Array(sess[c.key]).fill(false);
-    else if(base[c.key].length<sess[c.key]){while(base[c.key].length<sess[c.key])base[c.key].push(false);}
-    else if(base[c.key].length>sess[c.key])base[c.key]=base[c.key].slice(0,sess[c.key]);
-  });
-  return base;
+  el.textContent=ok?'● FB 연결 (초록)':'● FB 오류 (빨강)';
 }
 
 function monKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
@@ -784,175 +723,86 @@ function updateMonLabels(){
 }
 
 // ══════════════════════════════
-//  LOGIN
+//  CORE LOGIC
 // ══════════════════════════════
 function adminLogin(){
   const pw=document.getElementById('admin-pw').value;
-  const err=document.getElementById('admin-err');
   if(pw===APP.adminPw){
-    err.style.display='none';
     document.getElementById('admin-pw').value='';
-    curMonth=new Date();curMonth.setDate(1);liveChk={};
     go('scr-admin');renderAdmin();
-  } else err.style.display='block';
+  } else document.getElementById('admin-err').style.display='block';
 }
+
 function studentLogin(){
-  const nameInput=document.getElementById('sl-name-input').value.trim();
+  const name=document.getElementById('sl-name-input').value.trim();
   const pw=document.getElementById('sl-pw').value;
-  const err=document.getElementById('student-err');
-  if(!nameInput){err.style.display='block';err.textContent='이름을 입력해주세요';return;}
-  const found=APP.students.find(s=>s.name===nameInput);
-  if(!found){err.style.display='block';err.textContent='이름을 찾을 수 없습니다';return;}
-  const sid=found.id;
-  if(pw!==(APP.studentPws[sid]||'0000')){err.style.display='block';err.textContent='비밀번호가 틀렸습니다';return;}
-  err.style.display='none';
-  curStudentId=sid;
-  const me=APP.students.find(x=>x.id===sid);
-  document.getElementById('s-hdr-name').textContent='🎓 '+me.name;
-  document.getElementById('sl-pw').value='';
-  const ni=document.getElementById('sl-name-input');if(ni)ni.value='';
-  curMonth=new Date();curMonth.setDate(1);
-  go('scr-student');renderStudent();sTab('my');
-}
-function updateStudentSel(){
-  const cls=document.getElementById('sl-class').value;
-  const sel=document.getElementById('sl-name');
-  sel.innerHTML='<option value="">이름을 선택하세요</option>';
-  if(!cls)return;
-  APP.students.filter(s=>s.class===cls).forEach(s=>{sel.innerHTML+=`<option value="${s.id}">${s.name}</option>`;});
-}
-function refreshStudentLoginClasses(){
-  const sel=document.getElementById('sl-class');if(!sel)return;
-  const cur=sel.value;
-  sel.innerHTML='<option value="">반을 선택하세요</option>';
-  APP.classes.forEach(c=>{sel.innerHTML+=`<option value="${c}"${c===cur?' selected':''}>${c}</option>`;});
-}
-async function studentChangePw(){
-  const old=document.getElementById('s-pw-old').value;
-  const n=document.getElementById('s-pw-new').value;
-  const n2=document.getElementById('s-pw-new2').value;
-  if(old!==(APP.studentPws[curStudentId]||'0000')){toast('현재 비밀번호가 틀렸습니다');return;}
-  if(!n){toast('새 비밀번호를 입력해주세요');return;}
-  if(n!==n2){toast('새 비밀번호가 일치하지 않습니다');return;}
-  APP.studentPws[curStudentId]=n;
-  try{
-    await dbSet(`studentPws/${curStudentId}`,n);
-    ['s-pw-old','s-pw-new','s-pw-new2'].forEach(id=>document.getElementById(id).value='');
-    toast('✅ 비밀번호 변경 완료 (Firebase 저장됨)');
-  }catch(e){
-    toast('❌ 비밀번호 저장 실패: '+e.message);
-    APP.studentPws[curStudentId]=old; // 롤백
-  }
+  const found=APP.students.find(s=>s.name===name);
+  if(found && pw===(APP.studentPws[found.id]||'0000')){
+    curStudentId=found.id;
+    document.getElementById('s-hdr-name').textContent='🎓 '+found.name;
+    go('scr-student');renderStudent();
+  } else document.getElementById('student-err').style.display='block';
 }
 
-// ══════════════════════════════
-//  MONTH
-// ══════════════════════════════
-function changeMonth(dir){
-  curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()+dir,1);
-  updateMonLabels();liveChk={};
-  if(document.getElementById('scr-admin').classList.contains('active'))renderAdmin();
-  if(document.getElementById('scr-student').classList.contains('active'))renderStudent();
-}
-function goNow(){curMonth=new Date();curMonth.setDate(1);updateMonLabels();liveChk={};renderAdmin();}
-async function resetMonth(){
-  if(!confirm('이번 달 점수를 모두 초기화할까요?'))return;
-  const mon=monKey(curMonth);
-  APP.scores[mon]={};
-  await dbSet(`scores/${mon}`,null);
-  liveChk={};renderAdmin();toast('✅ 초기화 완료');
-}
-
-// ══════════════════════════════
-//  SESSIONS
-// ══════════════════════════════
-function loadSessionUI(){
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  CATS.forEach(c=>{const el=document.getElementById('sess-'+c.key);if(el)el.value=sess[c.key];});
-  const sp=document.getElementById('sp-mon-name');if(sp)sp.textContent=monShort(curMonth);
-}
-async function saveSessions(){
-  const mon=monKey(curMonth);const sess={};
-  CATS.forEach(c=>{const el=document.getElementById('sess-'+c.key);sess[c.key]=Math.max(1,Math.min(40,parseInt(el?.value)||4));if(el)el.value=sess[c.key];});
-  APP.sessions[mon]=sess;await saveSessionsToDB(mon);liveChk={};renderScoreTable();toast('✅ 횟수 설정 저장');
-}
-
-// ══════════════════════════════
-//  ADMIN
-// ══════════════════════════════
-function adminTab(t){
-  adminTab_=t;
-  ['scores','ranking','students','desk','settings'].forEach(x=>{document.getElementById('atab-'+x).style.display=x===t?'block':'none';});
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>{b.classList.toggle('on',['scores','ranking','students','desk','settings'][i]===t);});
-  if(t==='ranking')renderAdminRanking();
-  if(t==='desk'){renderDeskHistory();document.getElementById('desk-name-input').value='';}
-  if(t==='students')renderStudentList();
-  if(t==='scores')renderScoreTable();
-}
 function renderAdmin(){
   updateMonLabels();loadSessionUI();renderClassFilter();
   if(adminTab_==='scores')renderScoreTable();
   else if(adminTab_==='ranking')renderAdminRanking();
   else if(adminTab_==='students')renderStudentList();
 }
+
 function renderClassFilter(){
   const classes=['all',...APP.classes];
-  document.getElementById('a-class-filter').innerHTML=classes.map((c,i)=>
-    `<button onclick="setCls('${c}')" class="btn btn-sm ${adminCls===c?'btn-navy':'btn-out'}">${i===0?'전체':c}</button>`
+  document.getElementById('a-class-filter').innerHTML=classes.map(c=>
+    `<button onclick="setCls('${c}')" class="btn btn-sm ${adminCls===c?'btn-navy':'btn-out'}">${c==='all'?'전체':c}</button>`
   ).join('');
 }
 function setCls(c){adminCls=c;renderClassFilter();renderScoreTable();}
+
+function getSessions(mon){return APP.sessions[mon]||{...DEFAULT_SESS};}
+function emptyChkFor(sess){const r={};CATS.forEach(c=>{r[c.key]=Array(sess[c.key]).fill(false);});return r;}
+function getStudentChk(mon,sid,sess){
+  const base=APP.scores[mon]?.[sid]||emptyChkFor(sess);
+  CATS.forEach(c=>{
+    if(!base[c.key])base[c.key]=Array(sess[c.key]).fill(false);
+    while(base[c.key].length<sess[c.key])base[c.key].push(false);
+    if(base[c.key].length>sess[c.key])base[c.key]=base[c.key].slice(0,sess[c.key]);
+  });
+  return base;
+}
 
 function renderScoreTable(){
   const mon=monKey(curMonth);const sess=getSessions(mon);
   const students=APP.students.filter(s=>adminCls==='all'||s.class===adminCls);
   const wrap=document.getElementById('score-table-wrap');
   if(!students.length){wrap.innerHTML='<div class="empty">학생이 없습니다.</div>';return;}
-  let html=`<table class="notion-table"><thead><tr>
-    <th class="name-col">이름</th><th style="width:46px;">반</th>
-    ${CATS.map(c=>`<th>${c.icon} ${c.label}<div style="font-size:9px;opacity:.7;font-weight:400;margin-top:1px;">총 ${sess[c.key]}회</div></th>`).join('')}
-    <th style="width:80px;">🎁 보너스</th>
-    <th class="score-col" style="width:60px;">총점</th>
-  </tr></thead><tbody>`;
+  
+  let html=`<table class="notion-table"><thead><tr><th class="name-col">이름</th><th>반</th>${CATS.map(c=>`<th>${c.icon} ${c.label}</th>`).join('')}<th>🎁 보너스</th><th>총점</th></tr></thead><tbody>`;
   students.forEach(s=>{
     const base=getStudentChk(mon,s.id,sess);
     const sc={};CATS.forEach(c=>{sc[c.key]=liveChk[s.id]?.[c.key]?[...liveChk[s.id][c.key]]:[...base[c.key]];});
-    const tot=getTotalWithBonus(mon,sc,s.id);
-    html+=`<tr>
-      <td class="name-td">${s.name}</td><td><span class="cb">${s.class}</span></td>
-      ${CATS.map(c=>{
-        const cnt=calcCount(sc[c.key]);const score=calcScore(sc[c.key]);
-        return `<td><div class="chk-wrap">${sc[c.key].map((on,i)=>`<div class="chk-box ${c.cls} ${on?'on':''}" onclick="toggleChk(${s.id},'${c.key}',${i},this)" title="${i+1}회">✓</div>`).join('')}</div>
-          <div class="cat-score-wrap"><div class="cat-cnt">${cnt}/${sess[c.key]}회 · <strong>${score}점</strong></div></div></td>`;
-      }).join('')}
-      <td><input type="number" min="0" max="999" value="${getBonus(mon,s.id)}" style="width:58px;padding:4px 6px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;font-weight:700;text-align:center;" onchange="setBonus(${s.id},this.value)" id="bonus-${s.id}"></td>
-      <td id="tot-${s.id}"><span class="tot-chip">${getTotalWithBonus(mon,sc,s.id)}</span></td>
-    </tr>`;
+    html+=`<tr><td class="name-td">${s.name}</td><td><span class="cb">${s.class}</span></td>
+      ${CATS.map(c=>`<td><div class="chk-wrap">${sc[c.key].map((on,i)=>`<div class="chk-box ${c.cls} ${on?'on':''}" onclick="toggleChk(${s.id},'${c.key}',${i},this)">✓</div>`).join('')}</div></td>`).join('')}
+      <td><input type="number" value="${getBonus(mon,s.id)}" style="width:50px;" onchange="setBonus(${s.id},this.value)"></td>
+      <td id="tot-${s.id}"><span class="tot-chip">${getTotal(sc)+(APP.scores[mon]?.[s.id]?.bonus||0)}</span></td></tr>`;
   });
-  html+=`</tbody></table>`;
-  wrap.innerHTML=html;
+  wrap.innerHTML=html+'</tbody></table>';
 }
 
-function toggleChk(sid,catKey,idx,el){
+function toggleChk(sid,cat,idx,el){
   const mon=monKey(curMonth);const sess=getSessions(mon);
   if(!liveChk[sid]){const base=getStudentChk(mon,sid,sess);liveChk[sid]={};CATS.forEach(c=>{liveChk[sid][c.key]=[...base[c.key]];});}
-  liveChk[sid][catKey][idx]=!liveChk[sid][catKey][idx];
-  el.classList.toggle('on',liveChk[sid][catKey][idx]);
-  const catIdx=CATS.findIndex(c=>c.key===catKey);
-  const catTd=el.closest('tr').querySelectorAll('td')[catIdx+2];
-  if(catTd){const cnt=calcCount(liveChk[sid][catKey]);const score=calcScore(liveChk[sid][catKey]);const w=catTd.querySelector('.cat-score-wrap');if(w)w.innerHTML=`<div class="cat-cnt">${cnt}/${sess[catKey]}회 · <strong>${score}점</strong></div>`;}
-  const sc={};CATS.forEach(c=>{sc[c.key]=liveChk[sid][c.key]||[];});
-  const totEl=document.getElementById('tot-'+sid);if(totEl)totEl.innerHTML=`<span class="tot-chip">${getTotalWithBonus(monKey(curMonth),sc,sid)}</span>`;
-  // 체크 변경 시 자동저장 (1초 디바운스)
+  liveChk[sid][cat][idx]=!liveChk[sid][cat][idx];
+  el.classList.toggle('on',liveChk[sid][cat][idx]);
+  const tot=getTotal(liveChk[sid])+(APP.scores[mon]?.[sid]?.bonus||0);
+  document.getElementById('tot-'+sid).innerHTML=`<span class="tot-chip">${tot}</span>`;
   scheduleAutoSave();
 }
 
 let autoSaveTimer=null;
 function scheduleAutoSave(){
   clearTimeout(autoSaveTimer);
-  autoSaveTimer=setTimeout(async()=>{
-    await saveScores();
-  },1200);
+  autoSaveTimer=setTimeout(()=>saveScores(), 1500);
 }
 
 async function saveScores(){
@@ -962,432 +812,84 @@ async function saveScores(){
     if(!APP.scores[mon][sid])APP.scores[mon][sid]=emptyChkFor(getSessions(mon));
     CATS.forEach(c=>{if(liveChk[sid][c.key])APP.scores[mon][sid][c.key]=[...liveChk[sid][c.key]];});
   });
-  const btn=document.getElementById('btn-save-scores');
-  if(btn)btn.textContent='💾 저장 중...';
   try{
     await saveScoresToDB(mon);
-    liveChk={};
-    if(btn)btn.textContent='💾 저장';
-    toast('✅ 저장 완료');
-  }catch(e){
-    if(btn)btn.textContent='💾 저장';
-    toast('❌ 저장 실패: '+e.message);
-    console.error('saveScores 오류:',e);
-  }
+    toast('✅ 자동 저장됨');
+  }catch(e){toast('❌ 저장 오류');}
 }
 
-function renderAdminRanking(){
+// ══════════════════════════════
+//  ADDITIONAL FUNCTIONS (학생관리/랭킹/데스크 등)
+// ══════════════════════════════
+function adminTab(t){
+  adminTab_=t;
+  ['scores','ranking','students','desk','settings'].forEach(x=>{document.getElementById('atab-'+x).style.display=x===t?'block':'none';});
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>{b.classList.toggle('on',['scores','ranking','students','desk','settings'][i]===t);});
+  if(t==='ranking')renderAdminRanking();
+  if(t==='students')renderStudentList();
+  if(t==='desk')renderDeskHistory();
+}
+
+function loadSessionUI(){
   const mon=monKey(curMonth);const sess=getSessions(mon);
-  const students=APP.students;
-  const classes=[...new Set(students.map(s=>s.class))].sort();
-  function buildList(arr){return arr.map(s=>({...s,chk:getStudentChk(mon,s.id,sess)})).map(s=>({...s,tot:getTotalWithBonus(mon,s.chk,s.id)})).sort((a,b)=>b.tot-a.tot);}
-  const allRanked=buildList(students);const top10=allRanked.slice(0,10);
-  let html=`<div class="card"><div class="class-hd"><span class="cls-badge" style="background:var(--red);">🌐 전체 랭킹</span><span style="font-size:12px;color:var(--muted);">전체 ${students.length}명</span></div>${rankTable(top10,true,null)}${students.length>10?`<div class="top10-note">상위 10명 표시 · 전체 ${students.length}명</div>`:''}</div>`;
-  html+=`<div class="sec-div"><div class="line"></div><div class="sec-lbl">반별 랭킹</div><div class="line"></div></div>`;
-  classes.forEach(cls=>{const list=buildList(students.filter(s=>s.class===cls));html+=`<div class="card"><div class="class-hd"><span class="cls-badge">${cls}</span><span style="font-size:12px;color:var(--muted);">${list.length}명</span></div>${rankTable(list,false,null)}</div>`;});
-  document.getElementById('a-ranking-wrap').innerHTML=html;
+  CATS.forEach(c=>{const el=document.getElementById('sess-'+c.key);if(el)el.value=sess[c.key];});
+}
+async function saveSessions(){
+  const mon=monKey(curMonth);const sess={};
+  CATS.forEach(c=>{const el=document.getElementById('sess-'+c.key);sess[c.key]=parseInt(el.value);});
+  APP.sessions[mon]=sess;await saveSessionsToDB(mon);renderScoreTable();toast('✅ 횟수 저장됨');
 }
 
-function rankTable(list,showClass,meId){
-  const mon=monKey(curMonth);
-  return `<table class="rtbl"><thead><tr><th>순위</th><th>이름</th>${showClass?'<th>반</th>':''}${CATS.map(c=>`<th>${c.icon}</th>`).join('')}<th>🎁 보너스</th><th>총점</th></tr></thead><tbody>
-    ${list.map((s,i)=>{const isMine=s.id===meId;const nm=meId!=null?maskName(s.name):s.name;
-      const bonus=getBonus(mon,s.id);
-      return `<tr class="${isMine?'me':''}"><td><span class="rb ${i===0?'r1':i===1?'r2':i===2?'r3':'rn'}">${i+1}</span></td><td>${nm}${isMine?' <span style="font-size:10px;color:var(--red);font-weight:700;">◀나</span>':''}</td>${showClass?`<td><span class="cb">${s.class}</span></td>`:''}${CATS.map(c=>{const v=calcScore(s.chk[c.key]);return `<td><span class="score-chip ${scClass(v)}">${v}</span></td>`;}).join('')}<td><span class="score-chip" style="background:#fef3c7;color:#92400e;">${bonus>0?'+'+bonus:0}</span></td><td><span class="tot-chip">${s.tot}</span></td></tr>`;
-    }).join('')}
-  </tbody></table>`;
-}
-
-// 반 관리
-function renderClassPills(){
-  const wrap=document.getElementById('class-list-wrap');if(!wrap)return;
-  wrap.innerHTML=APP.classes.map(c=>`<div class="cls-pill">${c}<button class="del-cls" onclick="deleteClass('${c}')">✕</button></div>`).join('')+`<span style="font-size:11px;color:var(--muted);align-self:center;">${APP.classes.length}개 반</span>`;
-  const nc=document.getElementById('new-class');if(nc)nc.innerHTML=APP.classes.map(c=>`<option value="${c}">${c}</option>`).join('');
-}
-async function addClass(){
-  const inp=document.getElementById('new-cls-name');const name=inp.value.trim();
-  if(!name){toast('반 이름을 입력해주세요');return;}
-  if(APP.classes.includes(name)){toast('이미 존재하는 반입니다');return;}
-  APP.classes.push(name);await saveConfigToDB();inp.value='';renderClassPills();renderClassFilter();toast(`✅ "${name}" 추가`);
-}
-async function deleteClass(name){
-  const cnt=APP.students.filter(s=>s.class===name).length;
-  if(!confirm(`"${name}"${cnt>0?` (학생 ${cnt}명 포함)`:''}을 삭제하시겠습니까?\n해당 반 학생도 모두 삭제됩니다.`))return;
-  // 해당 반 학생 모두 삭제
-  const toDelete=APP.students.filter(s=>s.class===name);
-  toDelete.forEach(s=>{delete APP.studentPws[s.id];});
-  APP.students=APP.students.filter(s=>s.class!==name);
-  APP.classes=APP.classes.filter(c=>c!==name);
-  try{
-    await saveStudentsToDB();
-    await saveConfigToDB();
-    for(const s of toDelete) await dbSet(`studentPws/${s.id}`,null);
-    toast(`"${name}" 및 학생 ${cnt}명 삭제 완료`);
-  }catch(e){toast('❌ 저장 실패: '+e.message);}
-  renderClassPills();renderClassFilter();renderStudentList();
+function changeMonth(dir){
+  curMonth=new Date(curMonth.getFullYear(),curMonth.getMonth()+dir,1);
+  liveChk={};
+  if(document.getElementById('scr-admin').classList.contains('active'))renderAdmin();
+  if(document.getElementById('scr-student').classList.contains('active'))renderStudent();
 }
 
 function renderStudentList(){
-  renderClassPills();
-  const pws=APP.studentPws;let html='';
+  const wrap=document.getElementById('student-list-wrap');
+  let html='';
   APP.classes.forEach(cls=>{
-    const list=APP.students.filter(s=>s.class===cls);if(!list.length)return;
-    html+=`<div style="margin-bottom:18px;"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${cls} · ${list.length}명</div>
-      <table class="pw-tbl"><thead><tr><th>이름</th><th>비밀번호</th><th></th><th></th></tr></thead><tbody>
-        ${list.map(s=>`<tr><td style="font-weight:500;">${s.name}</td><td><input type="text" class="f-inp" id="pw-${s.id}" value="${pws[s.id]||'0000'}" style="width:110px;font-size:13px;"></td><td><button class="btn btn-navy btn-sm" onclick="updateStudentPw(${s.id})">저장</button></td><td><button class="btn-del" onclick="removeStudent(${s.id})">삭제</button></td></tr>`).join('')}
-      </tbody></table></div>`;
+    const list=APP.students.filter(s=>s.class===cls);
+    if(list.length){
+      html+=`<h4>${cls}</h4><table class="pw-tbl">`+list.map(s=>`<tr><td>${s.name}</td><td>${APP.studentPws[s.id]||'0000'}</td><td><button onclick="removeStudent(${s.id})">삭제</button></td></tr>`).join('')+'</table>';
+    }
   });
-  document.getElementById('student-list-wrap').innerHTML=html||'<div class="empty">학생이 없습니다.</div>';
+  wrap.innerHTML=html||'학생이 없습니다.';
 }
-async function updateStudentPw(sid){
-  const el=document.getElementById('pw-'+sid);if(!el||!el.value){toast('비밀번호를 입력해주세요');return;}
-  APP.studentPws[sid]=el.value;await dbSet(`studentPws/${sid}`,el.value);toast('✅ 비밀번호 저장');
-}
+
 async function addStudent(){
   const name=document.getElementById('new-name').value.trim();
   const cls=document.getElementById('new-class').value;
-  const pw=document.getElementById('new-pw').value.trim()||'0000';
-  if(!name){toast('이름을 입력해주세요');return;}
-  if(APP.students.find(s=>s.name===name&&s.class===cls)){toast('이미 존재합니다');return;}
-  const id=APP.nextId++;APP.students.push({id,name,class:cls});APP.studentPws[id]=pw;
-  await saveStudentsToDB();await dbSet(`studentPws/${id}`,pw);
-  document.getElementById('new-name').value='';document.getElementById('new-pw').value='';
-  renderStudentList();toast(`✅ ${cls} ${name} 추가`);
-}
-async function removeStudent(id){
-  if(!confirm('삭제하시겠습니까?'))return;
-  APP.students=APP.students.filter(s=>s.id!==id);
-  delete APP.studentPws[id];
-  try{
-    await saveStudentsToDB();
-    await dbSet(`studentPws/${id}`,null);
-    toast('✅ 삭제 완료');
-  }catch(e){
-    toast('❌ 저장 실패: '+e.message);
-  }
+  if(!name)return;
+  const id=APP.nextId++;
+  APP.students.push({id,name,class:cls});
+  APP.studentPws[id]='0000';
+  await saveStudentsToDB();
+  await dbSet(`studentPws/${id}`,'0000');
   renderStudentList();
 }
 
 // ══════════════════════════════
-//  포인트 & 데스크 시스템
-// ══════════════════════════════
-function getRedeemed(sid){ return APP.redemptions[sid]||0; }
-
-async function renderStudentPoints(){
-  const me=APP.students.find(s=>s.id===curStudentId);if(!me)return;
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  const chk=getStudentChk(mon,me.id,sess);
-  const tot=getTotalWithBonus(mon,chk,me.id);
-  const redeemed=getRedeemed(me.id);
-  const available=Math.max(0,tot-redeemed);
-  const canRedeem=available>=1000;
-  const times=Math.floor(available/1000);
-  const wrap=document.getElementById('points-info');
-  wrap.innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
-      <div style="background:#eef1ff;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:11px;color:#6366f1;font-weight:700;margin-bottom:4px;">누적 포인트</div>
-        <div style="font-size:28px;font-weight:900;color:#4338ca;">${tot}</div>
-      </div>
-      <div style="background:#fef3c7;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:4px;">사용 가능</div>
-        <div style="font-size:28px;font-weight:900;color:#d97706;">${available}</div>
-      </div>
-    </div>
-    <div style="background:#f3f4f6;border-radius:8px;padding:10px 14px;font-size:12px;color:#6b7280;margin-bottom:16px;">
-      📌 이미 적립: <strong>${redeemed}pt</strong> &nbsp;|&nbsp; 1000pt = 카드 1회 적립
-    </div>
-    ${canRedeem
-      ? `<button class="btn" style="width:100%;background:#1B2A6B;color:#fff;padding:14px;font-size:15px;font-weight:700;border-radius:12px;" onclick="showRedeemQR(${me.id},'${me.name}',${times*1000})">
-           🎫 ${times}회 적립 QR 생성 (${times*1000}pt)
-         </button>`
-      : `<div style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;">
-           아직 사용 가능한 포인트가 부족해요.<br>
-           <strong style="color:#4338ca;">${1000-available}pt</strong> 더 모으면 1회 적립!
-         </div>`
-    }
-    <div id="redeem-qr-wrap" style="margin-top:20px;"></div>
-  `;
-}
-
-function showRedeemQR(sid,name,points){
-  const time=Date.now();
-  const token=`EPL:${sid}:${name}:${points}:${time}`;
-  const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(token)}`;
-  document.getElementById('redeem-qr-wrap').innerHTML=`
-    <div style="text-align:center;background:#f9fafb;border:2px solid #e5e7eb;border-radius:12px;padding:20px;">
-      <div style="font-size:13px;font-weight:700;color:#1B2A6B;margin-bottom:12px;">📱 데스크에 이 화면을 보여주세요</div>
-      <img src="${qrUrl}" style="border-radius:8px;margin-bottom:12px;">
-      <div style="font-size:12px;color:#6b7280;">${name} · ${points}pt 적립 요청</div>
-      <div style="font-size:10px;color:#9ca3af;margin-top:4px;">${new Date(time).toLocaleString('ko-KR')}</div>
-    </div>
-  `;
-}
-
-// ── 데스크 QR 스캔
-let deskScanInterval=null;
-
-async function startDeskScan(){
-  try {
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const video=document.getElementById('desk-video');
-    video.srcObject=stream;
-    video.play();
-    document.getElementById('btn-stop-scan').style.display='';
-    document.getElementById('desk-scan-border').style.display='';
-    if(typeof jsQR==='undefined'){
-      // jsQR 동적 로드
-      await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});
-    }
-    deskScanInterval=setInterval(()=>scanFrame(video),200);
-  } catch(e){
-    alert('카메라 권한이 필요합니다: '+e.message);
-  }
-}
-
-function scanFrame(video){
-  const canvas=document.getElementById('desk-canvas');
-  const ctx=canvas.getContext('2d');
-  if(video.readyState!==video.HAVE_ENOUGH_DATA)return;
-  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-  ctx.drawImage(video,0,0);
-  const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-  const code=jsQR(img.data,img.width,img.height);
-  if(code){stopDeskScan();processDeskQR(code.data);}
-}
-
-function stopDeskScan(){
-  clearInterval(deskScanInterval);deskScanInterval=null;
-  const video=document.getElementById('desk-video');
-  if(video.srcObject){video.srcObject.getTracks().forEach(t=>t.stop());video.srcObject=null;}
-  document.getElementById('btn-stop-scan').style.display='none';
-  document.getElementById('desk-scan-border').style.display='none';
-}
-
-function processDeskQR(data){
-  const parts=data.split(':');
-  if(parts[0]!=='EPL'||parts.length<5){
-    document.getElementById('desk-result').style.display='block';
-    document.getElementById('desk-result').style.background='#fef2f2';
-    document.getElementById('desk-result').style.borderColor='#fca5a5';
-    document.getElementById('desk-result').innerHTML='❌ 유효하지 않은 QR코드입니다.';
-    return;
-  }
-  const sid=parseInt(parts[1]),name=parts[2],points=parseInt(parts[3]),time=parseInt(parts[4]);
-  const age=(Date.now()-time)/1000/60;
-  if(age>10){
-    showDeskResult(false,'⏰ QR코드가 만료됐어요. (10분 이내만 유효) 학생에게 다시 생성하도록 안내해주세요.');
-    return;
-  }
-  const student=APP.students.find(s=>s.id===sid);
-  if(!student){showDeskResult(false,'학생을 찾을 수 없습니다.');return;}
-  showDeskConfirm(sid,student.name,student.class,points);
-}
-
-function deskManualLookup(){
-  const name=document.getElementById('desk-name-input').value.trim();
-  if(!name)return;
-  const student=APP.students.find(s=>s.name===name);
-  if(!student){showDeskResult(false,'이름을 찾을 수 없습니다: '+name);return;}
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  const chk=getStudentChk(mon,student.id,sess);
-  const tot=getTotalWithBonus(mon,chk,student.id);
-  const redeemed=getRedeemed(student.id);
-  const available=Math.max(0,tot-redeemed);
-  const times=Math.floor(available/1000);
-  if(times<1){showDeskResult(false,`${name} 학생은 사용 가능한 포인트가 부족합니다. (가용: ${available}pt)`);return;}
-  showDeskConfirm(student.id,student.name,student.class,times*1000);
-}
-
-function showDeskConfirm(sid,name,cls,points){
-  const resultEl=document.getElementById('desk-result');
-  resultEl.style.display='block';
-  resultEl.style.background='#f0fdf4';
-  resultEl.style.borderColor='#86efac';
-  resultEl.innerHTML=`
-    <div style="margin-bottom:12px;">
-      <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:4px;">✅ 적립 요청 확인</div>
-      <div style="font-size:14px;">학생: <strong>${name}</strong> <span style="background:#1B2A6B;color:#fff;padding:2px 8px;border-radius:5px;font-size:11px;">${cls}</span></div>
-      <div style="font-size:22px;font-weight:900;color:#16a34a;margin:8px 0;">${points}pt 카드 적립</div>
-    </div>
-    <button class="btn" style="background:#16a34a;color:#fff;width:100%;padding:12px;font-size:14px;font-weight:700;" onclick="confirmRedemption(${sid},'${name}',${points})">
-      ✅ 적립 확인 (카드에 적립 완료)
-    </button>
-    <button class="btn" style="background:#6b7280;color:#fff;width:100%;padding:10px;margin-top:8px;" onclick="document.getElementById('desk-result').style.display='none'">
-      취소
-    </button>
-  `;
-}
-
-function showDeskResult(ok,msg){
-  const el=document.getElementById('desk-result');
-  el.style.display='block';
-  el.style.background=ok?'#f0fdf4':'#fef2f2';
-  el.style.borderColor=ok?'#86efac':'#fca5a5';
-  el.innerHTML=msg;
-}
-
-async function confirmRedemption(sid,name,points){
-  APP.redemptions[sid]=(APP.redemptions[sid]||0)+points;
-  try{
-    await dbSet('redemptions/'+sid, APP.redemptions[sid]);
-    showDeskResult(true,`🎉 <strong>${name}</strong> 학생 ${points}pt 카드 적립 완료!<br>누적 적립: ${APP.redemptions[sid]}pt`);
-    renderDeskHistory();
-  }catch(e){
-    showDeskResult(false,'저장 실패: '+e.message);
-  }
-}
-
-function renderDeskHistory(){
-  const wrap=document.getElementById('desk-history-wrap');if(!wrap)return;
-  const list=APP.students
-    .filter(s=>APP.redemptions[s.id]>0)
-    .map(s=>({...s,redeemed:APP.redemptions[s.id]}))
-    .sort((a,b)=>b.redeemed-a.redeemed);
-  if(!list.length){wrap.innerHTML='';return;}
-  wrap.innerHTML=`<div class="card"><div class="card-title" style="margin-bottom:12px;">📋 적립 이력</div>
-    <table class="rtbl"><thead><tr><th>이름</th><th>반</th><th>누적 적립</th></tr></thead><tbody>
-    ${list.map(s=>`<tr><td style="font-weight:500;">${s.name}</td><td><span class="cb">${s.class}</span></td><td><strong style="color:#16a34a;">${s.redeemed}pt</strong></td></tr>`).join('')}
-    </tbody></table></div>`;
-}
-
-
-async function testFirebase(){
-  const btn=document.getElementById('btn-fb-test');
-  const res=document.getElementById('fb-test-result');
-  btn.textContent='테스트 중...';btn.disabled=true;
-  res.innerHTML='';
-  let log='';
-  try{
-    // 쓰기 테스트
-    const writeRes=await fetch(`${FB_DB_URL}/${ROOT}/test_ping.json`,{
-      method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({time:Date.now(),ok:true})
-    });
-    if(!writeRes.ok) throw new Error('쓰기 실패: HTTP '+writeRes.status);
-    log+='✅ 쓰기 성공<br>';
-    // 읽기 테스트
-    const readRes=await fetch(`${FB_DB_URL}/${ROOT}/test_ping.json`);
-    if(!readRes.ok) throw new Error('읽기 실패: HTTP '+readRes.status);
-    const data=await readRes.json();
-    log+=data?.ok ? '✅ 읽기 성공<br>' : '❌ 읽기 데이터 오류<br>';
-    log+='<strong style="color:#16a34a;">Firebase 정상 작동 중!</strong>';
-    res.style.color='#16a34a';
-  }catch(e){
-    log+='<strong style="color:#dc2626;">❌ '+e.message+'</strong><br>';
-    log+='Firebase 규칙(read/write: true) 또는 URL을 확인해주세요.';
-    res.style.color='#dc2626';
-  }
-  res.innerHTML=log;
-  btn.textContent='🔌 연결 테스트';btn.disabled=false;
-}
-
-async function reloadData(){
-  if(!confirm('Firebase에서 데이터를 다시 불러올까요?\n저장 안 된 변경사항은 사라집니다.'))return;
-  liveChk={};
-  go('scr-loading');
-  document.getElementById('loading-txt').textContent='데이터 불러오는 중...';
-  await initApp();
-}
-
-async function resetFirebase(){
-  if(!confirm('Firebase 연결을 초기화하고 설정 화면으로 이동할까요?')) return;
-  localStorage.removeItem(LS_KEY);
-  location.reload();
-}
-
-async function changePw(){
-  const old=document.getElementById('pw-old').value;const n=document.getElementById('pw-new').value;const n2=document.getElementById('pw-new2').value;
-  if(old!==APP.adminPw){toast('현재 비밀번호 오류');return;}
-  if(!n||n!==n2){toast('새 비밀번호를 확인해주세요');return;}
-  APP.adminPw=n;await saveConfigToDB();
-  ['pw-old','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');toast('✅ 비밀번호 변경 완료');
-}
-function exportCSV(){
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  const rows=[['이름','반',...CATS.map(c=>c.label),'총점'].join(',')];
-  APP.students.forEach(s=>{const chk=getStudentChk(mon,s.id,sess);const scores=CATS.map(c=>calcScore(chk[c.key]));rows.push([s.name,s.class,...scores,scores.reduce((a,b)=>a+b,0)].join(','));});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv'}));a.download=`EPL_${mon}.csv`;a.click();
-}
-
-// ══════════════════════════════
-//  STUDENT
-// ══════════════════════════════
-function sTab(t){
-  ['my','ranking','history','points','pw'].forEach(x=>{document.getElementById('stab-'+x).style.display=x===t?'block':'none';});
-  document.querySelectorAll('#s-tabs .tab').forEach((b,i)=>{b.classList.toggle('on',['my','ranking','history','pw'][i]===t);});
-  if(t==='ranking')renderStudentRanking();
-  if(t==='history')renderStudentHistory();
-  if(t==='points')renderStudentPoints();
-  if(t==='my')renderMyScore();
-}
-function renderStudent(){updateMonLabels();renderMyScore();}
-
-function renderMyScore(){
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  const me=APP.students.find(s=>s.id===curStudentId);if(!me)return;
-  const chk=getStudentChk(mon,me.id,sess);const tot=getTotalWithBonus(mon,chk,me.id);
-  const classmates=APP.students.filter(s=>s.class===me.class).map(s=>{const c=getStudentChk(mon,s.id,sess);return{...s,tot:getTotalWithBonus(mon,c,s.id)};}).sort((a,b)=>b.tot-a.tot);
-  const cRank=classmates.findIndex(s=>s.id===me.id)+1;
-  document.getElementById('s-total-hero').innerHTML=`<div class="total-hero"><div class="total-num">${tot}</div><div class="total-info"><h3>${me.name}</h3><p><span class="cb">${me.class}</span>&nbsp; ${monLabel(curMonth)}</p><p style="margin-top:6px;font-size:12px;opacity:.7;">평균 ${Math.round(tot/4)}점</p></div><div class="total-rank"><div class="rk-num">${cRank}위</div><div class="rk-lbl">${me.class} 순위</div></div></div>`;
-  const bonus=getBonus(mon,me.id);
-  document.getElementById('s-stat-grid').innerHTML=CATS.map(c=>{
-    const v=calcScore(chk[c.key]);const cnt=calcCount(chk[c.key]);
-    const boxes=chk[c.key].map((on,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:2px;"><div style="width:18px;height:18px;border-radius:4px;border:2px solid ${c.color};background:${on?c.color:'transparent'};display:flex;align-items:center;justify-content:center;">${on?`<span style="color:#fff;font-size:10px;font-weight:700;">✓</span>`:''}</div><span style="font-size:7px;color:#9ca3af;">${i+1}</span></div>`).join('');
-    return `<div class="stat"><div class="s-lbl">${c.icon} ${c.label}</div><div class="s-val" style="color:${c.color}">${v}점</div><div style="font-size:10px;color:#9ca3af;margin:2px 0;">${cnt}/${sess[c.key]}회</div><div style="display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:6px;">${boxes}</div></div>`;
-  }).join('')+(bonus>0?`<div class="stat"><div class="s-lbl">🎁 보너스</div><div class="s-val" style="color:#d97706">+${bonus}점</div><div style="font-size:10px;color:#9ca3af;margin:2px 0;">선생님 지급</div></div>`:'');
-}
-
-function renderStudentRanking(){
-  const mon=monKey(curMonth);const sess=getSessions(mon);
-  const me=APP.students.find(s=>s.id===curStudentId);if(!me)return;
-  function buildList(arr){return arr.map(s=>({...s,chk:getStudentChk(mon,s.id,sess)})).map(s=>({...s,tot:getTotalWithBonus(mon,s.chk,s.id)})).sort((a,b)=>b.tot-a.tot);}
-  const allRanked=buildList(APP.students);const top10=allRanked.slice(0,10);
-  const myAllRank=allRanked.findIndex(s=>s.id===me.id)+1;const meInTop10=top10.some(s=>s.id===me.id);
-  const allRows=top10.map((s,i)=>`<tr class="${s.id===me.id?'me':''}"><td><span class="rb ${i===0?'r1':i===1?'r2':i===2?'r3':'rn'}">${i+1}</span></td><td>${maskName(s.name)}${s.id===me.id?' <span style="font-size:10px;color:var(--red);font-weight:700;">◀나</span>':''}</td><td><span class="tot-chip">${s.tot}</span></td></tr>`).join('');
-  const myExtra=!meInTop10?`<div style="padding:8px 10px;background:#eef1ff;border-top:2px dashed #c7d2fe;"><table class="rtbl"><tbody><tr class="me"><td><span class="rb rn">${myAllRank}</span></td><td>${maskName(me.name)} <span style="font-size:10px;color:var(--red);font-weight:700;">◀나</span></td><td><span class="tot-chip">${allRanked.find(s=>s.id===me.id).tot}</span></td></tr></tbody></table></div>`:'';
-  let html=`<div class="card"><div class="class-hd"><span class="cls-badge" style="background:var(--red);">🌐 전체 랭킹</span><span style="font-size:12px;color:var(--muted);">내 순위: <strong style="color:var(--red);">${myAllRank}등</strong></span></div><table class="rtbl"><thead><tr><th>순위</th><th>이름</th><th>총점</th></tr></thead><tbody>${allRows}</tbody></table>${myExtra}<div class="top10-note">상위 10명</div></div>`;
-  html+=`<div class="sec-div"><div class="line"></div><div class="sec-lbl">내 반 랭킹</div><div class="line"></div></div>`;
-  const myClassList=buildList(APP.students.filter(s=>s.class===me.class));const top3=myClassList.slice(0,3);
-  const myClassRank=myClassList.findIndex(s=>s.id===me.id)+1;const meInTop3=top3.some(s=>s.id===me.id);
-  const classRows=top3.map((s,i)=>`<tr class="${s.id===me.id?'me':''}"><td><span class="rb ${i===0?'r1':i===1?'r2':'r3'}">${i+1}</span></td><td>${maskName(s.name)}${s.id===me.id?' <span style="font-size:10px;color:var(--red);font-weight:700;">◀나</span>':''}</td><td><span class="tot-chip">${s.tot}</span></td></tr>`).join('');
-  const myClassExtra=!meInTop3?`<div style="padding:8px 10px;background:#eef1ff;border-top:2px dashed #c7d2fe;"><table class="rtbl"><tbody><tr class="me"><td><span class="rb rn">${myClassRank}</span></td><td>${maskName(me.name)} <span style="font-size:10px;color:var(--red);font-weight:700;">◀나</span></td><td><span class="tot-chip">${myClassList.find(s=>s.id===me.id).tot}</span></td></tr></tbody></table></div>`:'';
-  html+=`<div class="card"><div class="class-hd"><span class="cls-badge">${me.class}</span><span style="font-size:12px;color:var(--red);font-weight:700;">내 순위 ${myClassRank}등</span></div><table class="rtbl"><thead><tr><th>순위</th><th>이름</th><th>총점</th></tr></thead><tbody>${classRows}</tbody></table>${myClassExtra}<div class="top10-note">반별 상위 3명</div></div>`;
-  document.getElementById('s-ranking-wrap').innerHTML=html;
-}
-
-function renderStudentHistory(){
-  const me=APP.students.find(s=>s.id===curStudentId);if(!me)return;
-  const months=[];
-  for(let i=5;i>=0;i--){const d=new Date(curMonth.getFullYear(),curMonth.getMonth()-i,1);const key=monKey(d);const sess=getSessions(key);const chk=getStudentChk(key,me.id,sess);months.push({label:(d.getMonth()+1)+'월',key,chk,tot:getTotalWithBonus(key,chk,me.id),sess});}
-  const chartCols=months.map(m=>{const h=Math.round((m.tot/400)*80)||2;return `<div class="hist-col"><div class="hist-score">${m.tot}</div><div class="hist-bar-wrap"><div class="hbar" style="height:${h}px;background:${barCol(Math.round(m.tot/4))};"></div></div><div class="hist-mon">${m.label}</div></div>`;}).join('');
-  const rows=months.map(m=>{const bonus=getBonus(m.key,me.id);return `<tr><td style="font-weight:700;">${m.label}</td>${CATS.map(c=>{const v=calcScore(m.chk[c.key]);return `<td><span class="score-chip ${scClass(v)}">${v}</span></td>`;}).join('')}<td><span class="score-chip" style="background:#fef3c7;color:#92400e;">${bonus>0?'+'+bonus:0}</span></td><td><span class="tot-chip">${m.tot}</span></td></tr>`;}).join('');
-  document.getElementById('s-history-wrap').innerHTML=`<div class="hist-chart" style="margin-bottom:24px;">${chartCols}</div><table class="rtbl" style="table-layout:fixed;width:100%;"><thead><tr><th style="text-align:left;width:50px;">월</th>${CATS.map(c=>`<th style="width:auto;">${c.icon} ${c.label}</th>`).join('')}<th style="width:80px;">🎁 보너스</th><th style="width:60px;">총점</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-// ══════════════════════════════
-//  INIT — 저장된 Firebase 설정 확인
+//  INITIALIZE
 // ══════════════════════════════
 (function(){
   const saved=localStorage.getItem(LS_KEY);
   if(saved){
-    try {
-      const cfg=JSON.parse(saved);
-      // 설정화면 숨기고 바로 로딩
-      document.getElementById('scr-setup').style.display='none';
-      const el=document.getElementById('fb-databaseURL');
-      if(el&&cfg.databaseURL) el.value=cfg.databaseURL;
-      FB_DB_URL=cfg.databaseURL.replace(/\/$/,'');
-      // REST API 모드 - SDK 불필요
-      USE_FIREBASE=true;
-      go('scr-loading');
-      document.getElementById('loading-txt').textContent='데이터 불러오는 중...';
-      initApp();
-      return;
-    } catch(e){}
+    const cfg=JSON.parse(saved);
+    FB_DB_URL=cfg.databaseURL;
+    USE_FIREBASE=true;
+    document.getElementById('scr-setup').style.display='none';
+    go('scr-loading');
+    initApp();
   }
-  // 저장된 설정 없으면 설정화면 표시
 })();
+
+function refreshStudentLoginClasses(){
+  const sel=document.getElementById('new-class');if(!sel)return;
+  sel.innerHTML=APP.classes.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
 </script>
 </body>
 </html>
