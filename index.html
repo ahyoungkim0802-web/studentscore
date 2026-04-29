@@ -1894,16 +1894,19 @@ function renderStudentHistory(){
 //  INIT — 저장된 Firebase 설정 확인
 // ══════════════════════════════
 (function(){
+  const DEFAULT_FB='https://epl-students-score-default-rtdb.firebaseio.com';
   const saved=localStorage.getItem(LS_KEY);
   if(saved){
     try{
       const cfg=JSON.parse(saved);
-      FB_DB_URL=(cfg.databaseURL||'https://epl-students-score-default-rtdb.firebaseio.com').replace(/\/$/,'');
+      FB_DB_URL=(cfg.databaseURL||DEFAULT_FB).replace(/\/$/,'');
     }catch(e){
-      FB_DB_URL='https://epl-students-score-default-rtdb.firebaseio.com';
+      FB_DB_URL=DEFAULT_FB;
     }
   } else {
-    FB_DB_URL='https://epl-students-score-default-rtdb.firebaseio.com';
+    FB_DB_URL=DEFAULT_FB;
+    // 새 컴퓨터에도 자동 저장해서 다음에도 바로 연결
+    localStorage.setItem(LS_KEY,JSON.stringify({databaseURL:DEFAULT_FB}));
   }
   USE_FIREBASE=true;
   document.getElementById('scr-setup').style.display='none';
