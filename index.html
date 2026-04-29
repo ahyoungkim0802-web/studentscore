@@ -777,7 +777,7 @@ async function initApp(){
       if(maxId>=APP.nextId) APP.nextId=maxId+1;
     }
 
-    if(APP.students.length===0) await seedDefaultData();
+    // 학생이 0명이어도 seedDefaultData 호출하지 않음 (기존 데이터 덮어쓰기 방지)
 
     // 이미 다른 화면(로그인 등)으로 이동했으면 덮어쓰지 않음
     setFbStatus(true);
@@ -787,14 +787,18 @@ async function initApp(){
     refreshStudentLoginClasses();
   } catch(e){
     console.error('initApp 오류:', e.message);
-    // Firebase 연결 실패 시 화면에 표시
     const ltxt=document.getElementById('loading-txt');
-    if(ltxt) ltxt.textContent='⚠️ Firebase 연결 오류: '+e.message;
-    setTimeout(()=>{
-      APP.adminPw = APP.adminPw || 'epl2024';
-      APP.classes = APP.classes.length ? APP.classes : [...DEFAULT_CLASSES];
-      go('scr-landing');
-      refreshStudentLoginClasses();
+    if(ltxt) ltxt.textContent='⚠️ 연결 오류: '+e.message+' (재시도 중...)';
+    // 3초 후 재시도 (1회)
+    setTimeout(async()=>{
+      try{
+        const url=`${FB_DB_URL}/${ROOT}.json?nc=${Date.now()}`;
+        const res=await fetch(url,{method:'GET',cache:'no-store'});
+        if(res.ok){const d=await res.json();if(d&&d.students){location.reload();return;}}
+      }catch(e2){}
+      APP.adminPw=APP.adminPw||'epl2024';
+      APP.classes=APP.classes.length?APP.classes:[...DEFAULT_CLASSES];
+      go('scr-landing');refreshStudentLoginClasses();
     }, 3000);
   }
 }
