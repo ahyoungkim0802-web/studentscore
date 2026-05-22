@@ -941,8 +941,8 @@ async function reloadFromFirebase(){
         .filter(([id,v])=>v&&v.name&&v.class)
         .map(([id,v])=>({id:parseInt(id),...v}));
       APP.students.forEach(s=>{if(!APP.classes.includes(s.class))APP.classes.push(s.class);});
-      APP.scores = data.scores || {};
-      APP.redemptions = data.redemptions || {};
+      if(data.scores){Object.keys(data.scores).forEach(m=>{if(!APP.scores[m])APP.scores[m]={};Object.assign(APP.scores[m],data.scores[m]);});}
+      APP.redemptions = data.redemptions || APP.redemptions || {};
       if(data.config){
         APP.adminPw = data.config.adminPw || APP.adminPw;
         APP.adminId = data.config.adminId || APP.adminId || 'admin';
@@ -1608,8 +1608,8 @@ async function syncFromFirebase(){
     APP.nextId      = data.config?.nextId   || 1;
     APP.classes     = data.config?.classes  || [...DEFAULT_CLASSES];
     APP.studentPws  = data.studentPws       || {};
-    APP.scores      = data.scores           || {};
-    APP.redemptions = data.redemptions      || {};
+    if(data.scores){Object.keys(data.scores).forEach(m=>{if(!APP.scores[m])APP.scores[m]={};Object.assign(APP.scores[m],data.scores[m]);});}
+    APP.redemptions = data.redemptions      || APP.redemptions || {};
     APP.sessions    = {};
     if(data.sessions) Object.entries(data.sessions).forEach(([k,v])=>{APP.sessions[k]=v;});
     if(data.students){
