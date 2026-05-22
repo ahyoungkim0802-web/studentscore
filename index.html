@@ -595,16 +595,29 @@ async function dbGet(path){
 async function dbSet(path,val){
   if(USE_FIREBASE){
     const url=`${FB_DB_URL}/${ROOT}/${path}.json`;
-    const method=val==null?'DELETE':'PUT';
+    const method=val==null?'DELETE':'PATCH';
     const opts={method,headers:{'Content-Type':'application/json'}};
-    if(val!=null) opts.body=JSON.stringify(val);
-    const res=await fetch(url,opts);
-    if(!res.ok){
-      const txt=await res.text().catch(()=>'');
-      setFbStatus(false);
-      throw new Error('Firebase 저장 실패 ('+res.status+'): '+txt.substring(0,100));
+    if(val!=null){
+      // PATCH는 객체만 받음 — 배열이나 원시값이면 PUT 사용
+      if(typeof val==='object'&&!Array.isArray(val)){
+        opts.body=JSON.stringify(val);
+      }else{
+        opts.method='PUT';
+        opts.body=JSON.stringify(val);
+      }
     }
-    setFbStatus(true);
+    // 실패 시 3회 재시도
+    let lastErr='';
+    for(let retry=0;retry<3;retry++){
+      try{
+        const res=await fetch(url,opts);
+        if(res.ok){setFbStatus(true);return;}
+        lastErr=await res.text().catch(()=>'');
+        if(retry<2) await new Promise(r=>setTimeout(r,1000*(retry+1)));
+      }catch(e){lastErr=e.message;if(retry<2)await new Promise(r=>setTimeout(r,1000*(retry+1)));}
+    }
+    setFbStatus(false);
+    throw new Error('Firebase 저장 실패 (3회 재시도): '+lastErr.substring(0,100));
   } else {
     if(val==null) localStorage.removeItem(`${ROOT}/${path}`);
     else localStorage.setItem(`${ROOT}/${path}`,JSON.stringify(val));
@@ -853,7 +866,21 @@ async function saveScoresToDB(mon){
     console.warn('[saveScoresToDB] 빈 점수 — 저장 중단');
     return;
   }
-  await dbSet(`scores/${mon}`,APP.scores[mon]);
+  // 학생별 개별 저장 (다른 학생 데이터 보호)
+  const promises=[];
+  Object.entries(APP.scores[mon]).forEach(([sid,data])=>{
+    if(data&&Object.keys(data).length>0){
+      promises.push(
+        fetch(`${FB_DB_URL}/${ROOT}/scores/${mon}/${sid}.json`,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(data)
+        }).catch(e=>console.error(`점수 저장 실패 [${sid}]:`,e))
+      );
+    }
+  });
+  await Promise.all(promises);
+  setFbStatus(true);
 }
 async function saveSessionsToDB(mon){ await dbSet(`sessions/${mon}`,APP.sessions[mon]||null); }
 
