@@ -758,8 +758,8 @@ async function initApp(){
     // CATS를 APP.cats로 동기화
     CATS.forEach((c,i)=>{if(APP.cats[i]){c.label=APP.cats[i].label;c.icon=APP.cats[i].icon;}});
     APP.studentPws = data.studentPws     || {};
-    APP.scores   = data.scores           || {};
-    APP.redemptions = data.redemptions   || {};
+    APP.scores   = data.scores           || APP.scores || {};
+    APP.redemptions = data.redemptions   || APP.redemptions || {};
     // sessions: 공통 + 반별 모두 로드 (예: "2026-04", "2026-04_A반")
     APP.sessions = {};
     if(data.sessions && typeof data.sessions === 'object'){
@@ -847,7 +847,14 @@ async function saveConfigToDB(){
   if(!res.ok){setFbStatus(false);throw new Error('config 저장 실패 HTTP '+res.status);}
   setFbStatus(true);
 }
-async function saveScoresToDB(mon){ await dbSet(`scores/${mon}`,APP.scores[mon]||null); }
+async function saveScoresToDB(mon){
+  // 안전장치: 빈 데이터로 덮어쓰기 방지
+  if(!APP.scores[mon]||Object.keys(APP.scores[mon]).length===0){
+    console.warn('[saveScoresToDB] 빈 점수 — 저장 중단');
+    return;
+  }
+  await dbSet(`scores/${mon}`,APP.scores[mon]);
+}
 async function saveSessionsToDB(mon){ await dbSet(`sessions/${mon}`,APP.sessions[mon]||null); }
 
 // ══════════════════════════════
@@ -897,8 +904,14 @@ async function goWithRefresh(screenId){
           .filter(([id,v])=>v&&v.name&&v.class)
           .map(([id,v])=>({id:parseInt(id),...v}));
         APP.students.forEach(s=>{if(!APP.classes.includes(s.class))APP.classes.push(s.class);});
-        APP.scores = data.scores || {};
-        APP.redemptions = data.redemptions || {};
+        // 점수 병합 (기존 데이터 보존)
+        if(data.scores){
+          Object.keys(data.scores).forEach(mon=>{
+            if(!APP.scores[mon]) APP.scores[mon]={};
+            Object.assign(APP.scores[mon], data.scores[mon]);
+          });
+        }
+        APP.redemptions = data.redemptions || APP.redemptions || {};
         if(data.config){
           APP.adminPw = data.config.adminPw || APP.adminPw;
           APP.adminId = data.config.adminId || APP.adminId || 'admin';
